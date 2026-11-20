@@ -1,0 +1,234 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>新竹美食轉盤地圖</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* Layout: 左邊是轉盤(朱紅廟柱色),右邊是示意地圖與結果卡;轉到哪家,地圖就亮起那一區 */
+:root {
+  --bg:#EFF2F1; --surface:#FFFFFF; --ink:#1B282C; --muted:#586A6E; --line:#D6DEDC;
+  --accent:#BF3A22; --accent-ink:#FFFFFF; --accent-soft:#F8E4DF; --jade:#2A6A5D; --jade-soft:#DCEDE8;
+  --sea:#E1ECF0; --land:#F2EFE5; --wave:#B7CFD9;
+  --w0:#B8392B; --w1:#7E2418; --w2:#24465A; --w3:#2B5B3B;
+  --w0b:#D2563F; --w1b:#9A3A28; --w2b:#37627C; --w3b:#3F7A52;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#11191B; --surface:#192326; --ink:#E6EDEB; --muted:#9BADAC; --line:#2A3A3D;
+  --accent:#F0735A; --accent-ink:#1C0D09; --accent-soft:#3A2420; --jade:#79C7B4; --jade-soft:#1E3631;
+  --sea:#142226; --land:#1C2828; --wave:#2B454C; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#11191B; --surface:#192326; --ink:#E6EDEB; --muted:#9BADAC; --line:#2A3A3D;
+  --accent:#F0735A; --accent-ink:#1C0D09; --accent-soft:#3A2420; --jade:#79C7B4; --jade-soft:#1E3631;
+  --sea:#142226; --land:#1C2828; --wave:#2B454C; color-scheme: dark; }
+*,*::before,*::after { box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.7;
+  padding-inline:max(16px, env(safe-area-inset-left,0px)) max(16px, env(safe-area-inset-right,0px)); }
+.wrap { max-width:1100px; margin-inline:auto; padding-block:clamp(20px,4vw,44px) 56px; }
+a { color:inherit; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+h1 { font-family:var(--serif); font-weight:900; font-size:clamp(26px,5vw,42px); line-height:1.2; margin:0 0 6px; text-wrap:balance; }
+.lead { margin:0 0 18px; color:var(--muted); max-width:38em; }
+
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:22px; }
+.chip { font:inherit; font-size:13px; color:var(--ink); background:transparent; border:1px solid var(--line); border-radius:999px; padding:4px 13px; cursor:pointer; }
+.chip .n { color:var(--muted); font-variant-numeric:tabular-nums; margin-left:3px; }
+.chip[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.chip[aria-pressed="true"] .n { color:inherit; opacity:.7; }
+
+.stage { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(20px,4vw,48px); align-items:start; }
+@media (max-width:820px) { .stage { grid-template-columns:1fr; } }
+
+.wheel-box { position:relative; width:100%; max-width:520px; margin-inline:auto; aspect-ratio:1; }
+.wheel-box svg { width:100%; height:100%; display:block; overflow:visible; }
+#rot { transform-origin:50% 50%; transform-box:fill-box; will-change:transform; }
+.wheel-box svg.ptr { position:absolute; left:50%; top:-3.5%; width:7%; height:auto; transform:translateX(-50%); z-index:2; filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.hub { position:absolute; left:50%; top:50%; width:21%; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; z-index:2;
+  font:inherit; font-family:var(--serif); font-weight:900; font-size:clamp(18px,4.4vw,28px); color:var(--accent-ink); background:var(--accent);
+  border:4px solid var(--surface); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+.hub:disabled { cursor:progress; opacity:.85; }
+.sl-t { font-family:var(--sans); font-weight:700; fill:#fff; pointer-events:none; }
+.sl-n { font-family:var(--sans); font-weight:700; fill:#fff; pointer-events:none; }
+.sl.win { stroke:var(--surface); stroke-width:4; }
+.hint { text-align:center; color:var(--muted); font-size:13px; margin:12px 0 0; }
+
+.panel { display:grid; gap:16px; min-width:0; }
+.mapbox svg { width:100%; height:auto; display:block; border-radius:10px; border:1px solid var(--line); }
+.dz { transition:opacity .3s; }
+.dim .dz { opacity:.28; }
+.dim .dz.on { opacity:1; }
+.ring { fill:none; stroke:var(--accent); stroke-width:1.1; transform-box:fill-box; transform-origin:center; }
+@media (prefers-reduced-motion:no-preference) { .dz.on .ring { animation:pulse 1.6s ease-out infinite; } }
+@keyframes pulse { 0% { transform:scale(1); opacity:1; } 100% { transform:scale(1.9); opacity:0; } }
+.cap { margin:6px 0 0; font-size:12.5px; color:var(--muted); }
+
+.res { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; min-height:170px; }
+.res .empty { color:var(--muted); margin:0; padding:22px 0; text-align:center; }
+.res-top { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.ico { width:48px; height:48px; border-radius:50%; display:grid; place-items:center; flex:none; background:var(--accent-soft); }
+.ico svg { width:70%; height:70%; }
+.res h2 { font-family:var(--serif); font-weight:900; font-size:clamp(20px,3.4vw,26px); line-height:1.3; margin:0; text-wrap:balance; }
+.tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.tag { font-size:11px; line-height:1; padding:4px 7px; border-radius:3px; border:1px solid var(--line); color:var(--muted); }
+.tag.bib { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+.tag.new { background:var(--jade-soft); color:var(--jade); border-color:var(--jade-soft); }
+.res p.d { margin:6px 0 10px; }
+.info { margin:0; display:grid; gap:3px; font-size:13px; }
+.info div { display:grid; grid-template-columns:2.6em minmax(0,1fr); gap:6px; }
+.info dt { color:var(--muted); }
+.info dd { margin:0; overflow-wrap:anywhere; }
+.acts { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.btn { font:inherit; font-size:13px; color:var(--ink); text-decoration:none; background:transparent; border:1px solid var(--line); border-radius:6px; padding:6px 12px; cursor:pointer; }
+.btn:hover { border-color:var(--ink); }
+.btn.pri { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+
+.hist { margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:6px; }
+.hist li { font-size:12.5px; border:1px solid var(--line); border-radius:999px; padding:2px 10px; color:var(--muted); background:var(--surface); }
+.hist-h { font-size:12.5px; color:var(--muted); margin:0 0 6px; }
+.note { margin:28px 0 0; font-size:12.5px; color:var(--muted); max-width:46em; }
+</style>
+
+<div class="wrap">
+  <h1>新竹美食轉盤地圖</h1>
+  <p class="lead">不知道吃什麼?按下中間的按鈕,轉盤停在哪一家,右邊的地圖就標出它在新竹的哪一區。</p>
+  <div class="chips" id="chips" role="group" aria-label="轉盤範圍"></div>
+
+  <div class="stage">
+    <div>
+      <div class="wheel-box" id="wb">
+        <svg viewBox="-270 -270 540 540" role="img" aria-label="美食轉盤">
+          <g id="rot"></g>
+          <circle r="262" fill="none" stroke="var(--ink)" stroke-opacity=".18" stroke-width="2"/>
+        </svg>
+        <svg class="ptr" viewBox="0 0 30 40" aria-hidden="true"><path d="M15 40L2 8Q15-6 28 8Z" fill="var(--accent)" stroke="var(--surface)" stroke-width="2.5" stroke-linejoin="round"/></svg>
+        <button class="hub" id="spin" type="button" aria-label="轉動轉盤">轉!</button>
+      </div>
+      <p class="hint" id="hint" aria-live="polite"></p>
+    </div>
+
+    <div class="panel">
+      <section class="mapbox" id="mapbox" aria-label="新竹示意地圖"></section>
+      <section class="res" id="res" aria-live="polite"><p class="empty">還沒轉,先試試手氣。</p></section>
+      <div id="histw" hidden><p class="hist-h">剛才轉到</p><ul class="hist" id="hist"></ul></div>
+    </div>
+  </div>
+  <p class="note">地圖為示意圖,位置依行政區概略標示,非實際比例;出發前請用「在地圖開啟」確認路線。營業時間可能已更動,部分資料引用 2020、2023 年來源,請先致電確認。</p>
+</div>
+
+<script>
+(function(){
+  var D = {"items": [{"n": "東門米粉攤", "s": 0, "tag": "必比登", "new": false, "d": "東門市場內的人氣攤位,以大碗公、料多澎派的「海鮮芋頭米粉湯」聞名。", "a": "新竹市東區大同路86號 東門市場1116、1117攤號", "t": "0908-569-816", "o": "", "z": "東區", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E9%96%80%E7%B1%B3%E7%B2%89%E6%94%A4%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E5%A4%A7%E5%90%8C%E8%B7%AF86%E8%99%9F%20%E6%9D%B1%E9%96%80%E5%B8%82%E5%A0%B41116%E3%80%811117%E6%94%A4%E8%99%9F"}, {"n": "原味鴨肉麵", "s": 0, "tag": "必比登", "new": false, "d": "在地飄香超過30年的鴨肉老店,賣鴨肉飯、鴨肉炒麵與米粉,炒鴨血是老饕最愛。", "a": "新竹市東區勝利路59號", "t": "03-523-4812", "o": "", "z": "東區", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E5%8E%9F%E5%91%B3%E9%B4%A8%E8%82%89%E9%BA%B5%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E5%8B%9D%E5%88%A9%E8%B7%AF59%E8%99%9F"}, {"n": "九添福牛肉麵館", "s": 0, "tag": "必比登", "new": false, "d": "曾獲台北牛肉麵節紅燒組銅牌獎,大塊牛腩搭配醬油與大量蔬果燉煮的湯頭,香醇回甘。", "a": "新竹市北區西大路436號1樓", "t": "03-527-7975", "o": "", "z": "北區", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E4%B9%9D%E6%B7%BB%E7%A6%8F%E7%89%9B%E8%82%89%E9%BA%B5%E9%A4%A8%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E8%A5%BF%E5%A4%A7%E8%B7%AF436%E8%99%9F1%E6%A8%93"}, {"n": "菜園", "s": 0, "tag": "必比登", "new": false, "d": "上海菜餐廳,沒訂位吃不到,建議提早預約。", "a": "新竹市東區東大路一段136號", "t": "03-543-8898", "o": "建議事先訂位", "z": "東區", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E8%8F%9C%E5%9C%92%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E6%9D%B1%E5%A4%A7%E8%B7%AF%E4%B8%80%E6%AE%B5136%E8%99%9F"}, {"n": "禾日香", "s": 0, "tag": "必比登", "new": false, "d": "古早味太陽蛋魯肉飯,平價又道地的在地好味。", "a": "新竹市東區民族路163號", "t": "03-528-0276", "o": "", "z": "東區", "k": "rice", "m": "https://www.google.com/maps/search/?api=1&query=%E7%A6%BE%E6%97%A5%E9%A6%99%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E6%B0%91%E6%97%8F%E8%B7%AF163%E8%99%9F"}, {"n": "弄味小廚", "s": 0, "tag": "必比登", "new": false, "d": "以傳統客家風味為基底,味道濃郁鹹香,深受在地饕客喜愛。", "a": "新竹市香山區經國路三段92巷56號", "t": "03-538-8286", "o": "", "z": "香山區", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E5%BC%84%E5%91%B3%E5%B0%8F%E5%BB%9A%20%E6%96%B0%E7%AB%B9%E5%B8%82%E9%A6%99%E5%B1%B1%E5%8D%80%E7%B6%93%E5%9C%8B%E8%B7%AF%E4%B8%89%E6%AE%B592%E5%B7%B756%E8%99%9F"}, {"n": "貓的堅持", "s": 0, "tag": "必比登", "new": false, "d": "健康清爽的輕藥膳料理,是新竹市少見的養生路線。", "a": "新竹市東區西大路63號", "t": "0973-525-376", "o": "", "z": "東區", "k": "leaf", "m": "https://www.google.com/maps/search/?api=1&query=%E8%B2%93%E7%9A%84%E5%A0%85%E6%8C%81%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E8%A5%BF%E5%A4%A7%E8%B7%AF63%E8%99%9F"}, {"n": "鄒記菜包", "s": 0, "tag": "必比登", "new": false, "d": "北埔老街人氣伴手禮,手工菜包外皮帶有艾草纖維,口感彈牙Q軟。", "a": "新竹縣北埔鄉中正路49號", "t": "03-580-5835", "o": "2023年資料:平日10:00–16:00、假日08:00–17:00,出發前請確認", "z": "北埔", "k": "dumpling", "m": "https://www.google.com/maps/search/?api=1&query=%E9%84%92%E8%A8%98%E8%8F%9C%E5%8C%85%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%8C%97%E5%9F%94%E9%84%89%E4%B8%AD%E6%AD%A3%E8%B7%AF49%E8%99%9F"}, {"n": "春嬌粄條", "s": 0, "tag": "必比登", "new": false, "d": "純米粄條搭配滷肉、自製客家油蔥與小農韭菜;私房爌肉也值得一試。餐點每日限量。", "a": "新竹縣北埔鄉公園街16巷1號", "t": "0965-609-777", "o": "建議先訂位", "z": "北埔", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E6%98%A5%E5%AC%8C%E7%B2%84%E6%A2%9D%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%8C%97%E5%9F%94%E9%84%89%E5%85%AC%E5%9C%92%E8%A1%9716%E5%B7%B71%E8%99%9F"}, {"n": "季風 Monsoon", "s": 0, "tag": "必比登", "new": true, "d": "主廚是客家人,以創意蔬食重新詮釋客家菜,2025年7月從台北士林搬到竹北。", "a": "新竹縣竹北市成功一街20號", "t": "", "o": "完全預約制", "z": "竹北", "k": "leaf", "m": "https://www.google.com/maps/search/?api=1&query=%E5%AD%A3%E9%A2%A8%20Monsoon%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E7%AB%B9%E5%8C%97%E5%B8%82%E6%88%90%E5%8A%9F%E4%B8%80%E8%A1%9720%E8%99%9F"}, {"n": "善菓堂", "s": 0, "tag": "必比登", "new": false, "d": "精緻的創意蔬食料理。", "a": "新竹縣竹北市莊敬南路188號1樓", "t": "03-667-5955", "o": "", "z": "竹北", "k": "leaf", "m": "https://www.google.com/maps/search/?api=1&query=%E5%96%84%E8%8F%93%E5%A0%82%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E7%AB%B9%E5%8C%97%E5%B8%82%E8%8E%8A%E6%95%AC%E5%8D%97%E8%B7%AF188%E8%99%9F1%E6%A8%93"}, {"n": "首烏廚 EAT", "s": 0, "tag": "必比登", "new": false, "d": "以「首烏帝王雞湯」為招牌的人氣客家菜。", "a": "新竹縣竹北市成功二街31號", "t": "03-657-0068", "o": "", "z": "竹北", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E9%A6%96%E7%83%8F%E5%BB%9A%20EAT%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E7%AB%B9%E5%8C%97%E5%B8%82%E6%88%90%E5%8A%9F%E4%BA%8C%E8%A1%9731%E8%99%9F"}, {"n": "唐草園", "s": 0, "tag": "必比登", "new": false, "d": "傳承老奶奶眷村風味的麵食餃子館。", "a": "新竹縣竹北市台科路113號", "t": "03-668-8609", "o": "", "z": "竹北", "k": "dumpling", "m": "https://www.google.com/maps/search/?api=1&query=%E5%94%90%E8%8D%89%E5%9C%92%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E7%AB%B9%E5%8C%97%E5%B8%82%E5%8F%B0%E7%A7%91%E8%B7%AF113%E8%99%9F"}, {"n": "ㄤ咕麵", "s": 0, "tag": "必比登", "new": false, "d": "創立於1955年的關西老街古早味麵館,油麵好吃,客家小菜也不錯。", "a": "新竹縣關西鎮光復路35號", "t": "03-587-5541", "o": "", "z": "關西", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E3%84%A4%E5%92%95%E9%BA%B5%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E9%97%9C%E8%A5%BF%E9%8E%AE%E5%85%89%E5%BE%A9%E8%B7%AF35%E8%99%9F"}, {"n": "鴻金食堂", "s": 0, "tag": "必比登", "new": false, "d": "客家菜餐廳,招牌客家小炒曾獲2020年客家小炒全國爭霸賽亞軍。", "a": "新竹縣竹東鎮柯湖路三段312號", "t": "03-571-8181", "o": "", "z": "竹東", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E9%B4%BB%E9%87%91%E9%A3%9F%E5%A0%82%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E7%AB%B9%E6%9D%B1%E9%8E%AE%E6%9F%AF%E6%B9%96%E8%B7%AF%E4%B8%89%E6%AE%B5312%E8%99%9F"}, {"n": "晌午粄食", "s": 0, "tag": "必比登", "new": false, "d": "販售傳統客家水粄,從泡米、磨粄到壓粄至少6小時,有甜、鹹口味,質地像碗粿。", "a": "新竹縣橫山鄉河堤大道8號", "t": "0911-251-643", "o": "", "z": "橫山", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E6%99%8C%E5%8D%88%E7%B2%84%E9%A3%9F%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E6%A9%AB%E5%B1%B1%E9%84%89%E6%B2%B3%E5%A0%A4%E5%A4%A7%E9%81%938%E8%99%9F"}, {"n": "一哥炊粉", "s": 0, "tag": "必比登", "new": true, "d": "芎林在地40多年的客家傳統早餐,100%在來米蒸炊成細米粉,有炒炊粉、炊粉湯,也可與粄條混搭。", "a": "新竹縣芎林鄉福昌街621號", "t": "03-592-5635", "o": "", "z": "芎林", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E4%B8%80%E5%93%A5%E7%82%8A%E7%B2%89%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E8%8A%8E%E6%9E%97%E9%84%89%E7%A6%8F%E6%98%8C%E8%A1%97621%E8%99%9F"}, {"n": "柳家肉燥飯", "s": 1, "tag": "城隍廟", "new": false, "d": "城隍廟口的招牌老店,肉燥飯香、肉燥入口即化,建議搭一份白菜滷;用餐時段常排隊。", "a": "新竹市北區中山路75號(城隍廟前廣場)", "t": "03-526-7990", "o": "2020年資料:10:30–22:00", "z": "北區", "k": "rice", "m": "https://www.google.com/maps/search/?api=1&query=%E6%9F%B3%E5%AE%B6%E8%82%89%E7%87%A5%E9%A3%AF%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF75%E8%99%9F"}, {"n": "林家肉圓", "s": 1, "tag": "城隍廟", "new": false, "d": "近百年歷史、傳承到第四代,新竹肉圓代表之一,有傳統蔥肉、筍絲、栗子等口味,蒜泥醬料濃郁。", "a": "新竹市北區中山路75號(城隍廟前廣場)", "t": "0981-614-322", "o": "2020年資料:10:30–22:00", "z": "北區", "k": "meat", "m": "https://www.google.com/maps/search/?api=1&query=%E6%9E%97%E5%AE%B6%E8%82%89%E5%9C%93%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF75%E8%99%9F"}, {"n": "連家阿婆小吃", "s": 1, "tag": "城隍廟", "new": false, "d": "傳承到第四代,招牌「蛋酥魷魚羹」,也可點米粉加炒麵雙吃。", "a": "新竹市北區中山路75號(城隍廟前廣場)", "t": "03-525-9115", "o": "2020年資料:08:30–21:30", "z": "北區", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E9%80%A3%E5%AE%B6%E9%98%BF%E5%A9%86%E5%B0%8F%E5%90%83%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF75%E8%99%9F"}, {"n": "阿富魯肉飯", "s": 1, "tag": "城隍廟", "new": false, "d": "城隍廟內賣得最晚的魯肉飯,配醃蘿蔔解膩,另有貢丸湯、肉羹湯與魯蛋。", "a": "新竹市北區中山路75號", "t": "03-525-4305", "o": "2020年資料:11:00–02:00", "z": "北區", "k": "rice", "m": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E5%AF%8C%E9%AD%AF%E8%82%89%E9%A3%AF%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF75%E8%99%9F"}, {"n": "阿瑛潤餅", "s": 1, "tag": "城隍廟", "new": false, "d": "在地人才買的潤餅,有原味、辣味、素食、芥末四種,內餡堆得像小山。", "a": "新竹市北區中山路96號(西大發旁仁德街)", "t": "", "o": "2020年資料:10:00–21:00", "z": "北區", "k": "dumpling", "m": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E7%91%9B%E6%BD%A4%E9%A4%85%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF96%E8%99%9F"}, {"n": "周家燒麻糬", "s": 1, "tag": "城隍廟", "new": false, "d": "軟Q的燒麻糬,有原味與包餡,花生、芝麻口味受歡迎;外帶時花生粉會另外放。", "a": "新竹市北區中山路75號(城隍廟前廣場)", "t": "0955-346-226", "o": "2020年資料:13:00–21:00,週四公休", "z": "北區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E5%91%A8%E5%AE%B6%E7%87%92%E9%BA%BB%E7%B3%AC%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF75%E8%99%9F"}, {"n": "林家冰店", "s": 1, "tag": "城隍廟", "new": false, "d": "走古早味路線的冰店,綜合冰料多、不死甜,另有熱甜湯。", "a": "新竹市北區中山路75號(城隍廟前廣場)", "t": "03-523-0343", "o": "2020年資料:10:30–21:00", "z": "北區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E6%9E%97%E5%AE%B6%E5%86%B0%E5%BA%97%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF75%E8%99%9F"}, {"n": "鴨肉許(許二姊)", "s": 1, "tag": "城隍廟周邊", "new": false, "d": "北門街名店,炒鴨肉麵、鴨肉飯鴨香濃郁,酸辣的炒鴨血也推薦。", "a": "新竹市北區北門街35號", "t": "03-524-6574", "o": "2020年資料:10:00–02:30", "z": "北區", "k": "meat", "m": "https://www.google.com/maps/search/?api=1&query=%E9%B4%A8%E8%82%89%E8%A8%B1%28%E8%A8%B1%E4%BA%8C%E5%A7%8A%29%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E5%8C%97%E9%96%80%E8%A1%9735%E8%99%9F"}, {"n": "葉大粒粉圓", "s": 1, "tag": "城隍廟周邊", "new": false, "d": "經營超過一甲子,每天現做的粉圓是地瓜粉原色、Q彈有勁;冬季限定「竹塹芋泥」。", "a": "新竹市北區北門街83號", "t": "03-525-6763", "o": "2020年資料:12:00–23:00", "z": "北區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E8%91%89%E5%A4%A7%E7%B2%92%E7%B2%89%E5%9C%93%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E5%8C%97%E9%96%80%E8%A1%9783%E8%99%9F"}, {"n": "老黃豬腳大王", "s": 1, "tag": "城隍廟周邊", "new": false, "d": "豬腳不腥、軟Q不爛,搭配店家沾醬;當歸豬腳麵線與滷肉飯是常見組合。", "a": "新竹市北區北門街89號", "t": "03-526-6188", "o": "2020年資料:14:30–00:00", "z": "北區", "k": "meat", "m": "https://www.google.com/maps/search/?api=1&query=%E8%80%81%E9%BB%83%E8%B1%AC%E8%85%B3%E5%A4%A7%E7%8E%8B%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E5%8C%97%E9%96%80%E8%A1%9789%E8%99%9F"}, {"n": "西大發城隍包", "s": 1, "tag": "城隍廟周邊", "new": false, "d": "排隊名店,招牌「城隍包」之外,還有爆漿珍珠奶茶包、爆漿黑糖包等甜鹹口味;分熱食與冷凍可選。", "a": "新竹市北區長安街3號", "t": "03-525-9115", "o": "2020年資料:08:00–21:30", "z": "北區", "k": "dumpling", "m": "https://www.google.com/maps/search/?api=1&query=%E8%A5%BF%E5%A4%A7%E7%99%BC%E5%9F%8E%E9%9A%8D%E5%8C%85%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E9%95%B7%E5%AE%89%E8%A1%973%E8%99%9F"}, {"n": "廟口鴨香飯", "s": 1, "tag": "城隍廟周邊", "new": false, "d": "鴨香十足、肉質軟嫩,建議加荷包蛋拌著吃;炒鴨血酸度剛好。常需併桌。", "a": "新竹市北區中山路142號", "t": "03-523-1190", "o": "2020年資料:週二、三公休", "z": "北區", "k": "rice", "m": "https://www.google.com/maps/search/?api=1&query=%E5%BB%9F%E5%8F%A3%E9%B4%A8%E9%A6%99%E9%A3%AF%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF142%E8%99%9F"}, {"n": "卉羚綠豆沙牛乳", "s": 1, "tag": "城隍廟周邊", "new": false, "d": "用真材實料綠豆沙調製,綿密不沙,搭配牛乳中和甜度;限量珍珠晚到買不到。", "a": "新竹市北區中山路103號", "t": "0903-198-169", "o": "2020年資料:12:00–22:00,週二公休", "z": "北區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E5%8D%89%E7%BE%9A%E7%B6%A0%E8%B1%86%E6%B2%99%E7%89%9B%E4%B9%B3%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%B1%B1%E8%B7%AF103%E8%99%9F"}, {"n": "梅花雞蛋糕", "s": 2, "tag": "市區小吃", "new": false, "d": "外酥內軟的銅板價雞蛋糕,是新竹經典點心。", "a": "新竹市東區中正路28號", "t": "", "o": "10:00–18:00", "z": "東區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E6%A2%85%E8%8A%B1%E9%9B%9E%E8%9B%8B%E7%B3%95%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E4%B8%AD%E6%AD%A3%E8%B7%AF28%E8%99%9F"}, {"n": "北門炸粿", "s": 2, "tag": "市區小吃", "new": false, "d": "四代傳承的百年老店,炸物15、20元的銅板價,現點現炸,搭特製甜辣醬。", "a": "新竹市北區城北街15號", "t": "03-522-0471", "o": "13:30–20:00,週一公休", "z": "北區", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E5%8C%97%E9%96%80%E7%82%B8%E7%B2%BF%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E5%9F%8E%E5%8C%97%E8%A1%9715%E8%99%9F"}, {"n": "鷹王肉圓", "s": 2, "tag": "市區小吃", "new": false, "d": "空軍基地旁的人氣肉圓,兩顆45元不減料,另推骨仔肉湯與烤香腸。", "a": "新竹市香山區延平路二段350號", "t": "", "o": "10:30–19:00,週三公休", "z": "香山區", "k": "meat", "m": "https://www.google.com/maps/search/?api=1&query=%E9%B7%B9%E7%8E%8B%E8%82%89%E5%9C%93%20%E6%96%B0%E7%AB%B9%E5%B8%82%E9%A6%99%E5%B1%B1%E5%8D%80%E5%BB%B6%E5%B9%B3%E8%B7%AF%E4%BA%8C%E6%AE%B5350%E8%99%9F"}, {"n": "阿婆早餐麵店", "s": 2, "tag": "市區小吃", "new": false, "d": "份量驚人的現桿雙黃油條蛋餅,以及紅油川味抄手麵,眷村口味。", "a": "新竹市東區東山街6號", "t": "03-573-0765", "o": "06:00–14:00,每週日一公休(原文)", "z": "東區", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E5%A9%86%E6%97%A9%E9%A4%90%E9%BA%B5%E5%BA%97%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E6%9D%B1%E5%B1%B1%E8%A1%976%E8%99%9F"}, {"n": "竹蓮什錦麵", "s": 2, "tag": "市區小吃", "new": false, "d": "料多實在的什錦麵,湯頭鮮甜不油膩,炸肉外酥內嫩;可掃碼點餐。", "a": "新竹市東區食品路126號", "t": "", "o": "10:00–14:00、17:00–19:30,週一公休;假日08:00開", "z": "東區", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E7%AB%B9%E8%93%AE%E4%BB%80%E9%8C%A6%E9%BA%B5%20%E6%96%B0%E7%AB%B9%E5%B8%82%E6%9D%B1%E5%8D%80%E9%A3%9F%E5%93%81%E8%B7%AF126%E8%99%9F"}, {"n": "楊家意麵", "s": 2, "tag": "市區小吃", "new": false, "d": "被稱為新竹意麵御三家之一,湯頭自有香氣。", "a": "新竹市東區(詳細地址請出發前查詢)", "t": "", "o": "", "z": "東區", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E6%A5%8A%E5%AE%B6%E6%84%8F%E9%BA%B5%20%E6%96%B0%E7%AB%B9"}, {"n": "老陳家中央市場糯米水餃", "s": 2, "tag": "市區小吃", "new": false, "d": "藏在市場迷宮裡、飄香約70年的糯米水餃,白冰冰也愛。", "a": "新竹市北區中央市場內", "t": "", "o": "", "z": "北區", "k": "dumpling", "m": "https://www.google.com/maps/search/?api=1&query=%E8%80%81%E9%99%B3%E5%AE%B6%E4%B8%AD%E5%A4%AE%E5%B8%82%E5%A0%B4%E7%B3%AF%E7%B1%B3%E6%B0%B4%E9%A4%83%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E4%B8%AD%E5%A4%AE%E5%B8%82%E5%A0%B4%E5%85%A7"}, {"n": "長興釣蝦場麻辣臭豆腐", "s": 2, "tag": "市區小吃", "new": false, "d": "隱身在釣蝦場內的麻辣臭豆腐,也有熱炒與山產;用餐時段要排隊。", "a": "新竹市香山區長興街498號", "t": "", "o": "11:00–21:50,週一公休", "z": "香山區", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E9%95%B7%E8%88%88%E9%87%A3%E8%9D%A6%E5%A0%B4%E9%BA%BB%E8%BE%A3%E8%87%AD%E8%B1%86%E8%85%90%20%E6%96%B0%E7%AB%B9%E5%B8%82%E9%A6%99%E5%B1%B1%E5%8D%80%E9%95%B7%E8%88%88%E8%A1%97498%E8%99%9F"}, {"n": "沒有名字的甜點專賣", "s": 2, "tag": "甜點咖啡", "new": false, "d": "專賣北海道生乳捲、藍莓派、芋頭瑞士捲,搭配奶蓋鮮奶茶與拿鐵。", "a": "新竹市香山區中華路六段331巷335號", "t": "", "o": "", "z": "香山區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E6%B2%92%E6%9C%89%E5%90%8D%E5%AD%97%E7%9A%84%E7%94%9C%E9%BB%9E%E5%B0%88%E8%B3%A3%20%E6%96%B0%E7%AB%B9%E5%B8%82%E9%A6%99%E5%B1%B1%E5%8D%80%E4%B8%AD%E8%8F%AF%E8%B7%AF%E5%85%AD%E6%AE%B5331%E5%B7%B7335%E8%99%9F"}, {"n": "彼刻 Piccola Enoteca", "s": 2, "tag": "甜點咖啡", "new": false, "d": "北區老宅甜點店,招牌微笑捲毛戚風蛋糕,搭配當季蔬果。", "a": "新竹市北區西門街135號", "t": "", "o": "", "z": "北區", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E5%BD%BC%E5%88%BB%20Piccola%20Enoteca%20%E6%96%B0%E7%AB%B9%E5%B8%82%E5%8C%97%E5%8D%80%E8%A5%BF%E9%96%80%E8%A1%97135%E8%99%9F"}, {"n": "劉家莊燜雞", "s": 3, "tag": "縣區美食", "new": false, "d": "鐵盒現烤的噴汁燜雞,皮Q肉嫩;假日用餐時段常需在門口等候。", "a": "新竹縣新埔鎮照門里九芎湖六鄰十六之二號", "t": "03-589-0709", "o": "11:00–18:30,假日09:00開;週三、四休", "z": "新埔", "k": "meat", "m": "https://www.google.com/maps/search/?api=1&query=%E5%8A%89%E5%AE%B6%E8%8E%8A%E7%87%9C%E9%9B%9E%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E6%96%B0%E5%9F%94%E9%8E%AE%E7%85%A7%E9%96%80%E9%87%8C%E4%B9%9D%E8%8A%8E%E6%B9%96%E5%85%AD%E9%84%B0%E5%8D%81%E5%85%AD%E4%B9%8B%E4%BA%8C%E8%99%9F"}, {"n": "老皮牛肉麵", "s": 3, "tag": "縣區美食", "new": false, "d": "天天客滿,大塊牛肉、店內用餐招待豆花豆漿,附免費停車場。", "a": "新竹縣湖口鄉新興路306號", "t": "", "o": "11:00–14:00、16:45–20:00,週一休", "z": "湖口", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E8%80%81%E7%9A%AE%E7%89%9B%E8%82%89%E9%BA%B5%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E6%B9%96%E5%8F%A3%E9%84%89%E6%96%B0%E8%88%88%E8%B7%AF306%E8%99%9F"}, {"n": "機車豆花(好豆味豆花)", "s": 3, "tag": "北埔老街", "new": false, "d": "排隊人龍名物,有薑汁與純糖水可選,冷熱皆可;無內用座位、無固定擺攤地點。", "a": "北埔老街(擺攤地點不固定)", "t": "", "o": "2023年資料:週六、日及連假14:00起,賣完為止", "z": "北埔", "k": "sweet", "m": "https://www.google.com/maps/search/?api=1&query=%E6%A9%9F%E8%BB%8A%E8%B1%86%E8%8A%B1%28%E5%A5%BD%E8%B1%86%E5%91%B3%E8%B1%86%E8%8A%B1%29%20%E6%96%B0%E7%AB%B9"}, {"n": "老街粄條", "s": 3, "tag": "北埔老街", "new": false, "d": "堅持手工粄條,軟Q滑溜;乾粄條與梅干扣肉是招牌,每人約百元出頭。", "a": "新竹縣北埔鄉(北埔老街內)", "t": "", "o": "出發前請確認營業時間", "z": "北埔", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E8%80%81%E8%A1%97%E7%B2%84%E6%A2%9D%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%8C%97%E5%9F%94%E9%84%89"}, {"n": "民歌擂茶(北埔擂茶)", "s": 3, "tag": "北埔老街", "new": false, "d": "北埔以擂茶聞名,老街上店家林立;可搭配麻糬享用。另有北埔農會可購買伴手禮。", "a": "新竹縣北埔鄉北埔街41號", "t": "03-580-1111", "o": "", "z": "北埔", "k": "cup", "m": "https://www.google.com/maps/search/?api=1&query=%E6%B0%91%E6%AD%8C%E6%93%82%E8%8C%B6%28%E5%8C%97%E5%9F%94%E6%93%82%E8%8C%B6%29%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%8C%97%E5%9F%94%E9%84%89%E5%8C%97%E5%9F%94%E8%A1%9741%E8%99%9F"}, {"n": "竹東李記米苔目", "s": 3, "tag": "縣區美食", "new": false, "d": "正宗客家風味,招牌為米苔目冰與炒米苔目。", "a": "新竹縣竹東鎮(詳細地址請出發前查詢)", "t": "", "o": "", "z": "竹東", "k": "noodle", "m": "https://www.google.com/maps/search/?api=1&query=%E7%AB%B9%E6%9D%B1%E6%9D%8E%E8%A8%98%E7%B1%B3%E8%8B%94%E7%9B%AE%20%E6%96%B0%E7%AB%B9"}, {"n": "竹東夜市", "s": 3, "tag": "夜市", "new": false, "d": "每週六才營業的觀光夜市,攤販重複性低、離竹東火車站近,美食多為銅板價。", "a": "新竹縣竹東鎮沿河街411號", "t": "", "o": "週六18:00–23:00", "z": "竹東", "k": "plate", "m": "https://www.google.com/maps/search/?api=1&query=%E7%AB%B9%E6%9D%B1%E5%A4%9C%E5%B8%82%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E7%AB%B9%E6%9D%B1%E9%8E%AE%E6%B2%BF%E6%B2%B3%E8%A1%97411%E8%99%9F"}, {"n": "森窯", "s": 3, "tag": "咖啡披薩", "new": false, "d": "被森林包圍的野餐式窯烤披薩,可租野餐墊。", "a": "新竹縣北埔鄉六股8鄰20之1", "t": "", "o": "週三–五11:00–17:30、週六日11:00–18:30;週一二公休", "z": "北埔", "k": "pizza", "m": "https://www.google.com/maps/search/?api=1&query=%E6%A3%AE%E7%AA%AF%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%8C%97%E5%9F%94%E9%84%89%E5%85%AD%E8%82%A18%E9%84%B020%E4%B9%8B1"}, {"n": "世界幸福咖啡總店", "s": 3, "tag": "咖啡早午餐", "new": false, "d": "湖景與林景並存,當日現烤麵包;幸福豆乳麵、猴菇蘿蔔糕值得一試。", "a": "新竹縣峨眉鄉快樂路7號", "t": "", "o": "11:00–16:30,週一公休", "z": "峨眉", "k": "cup", "m": "https://www.google.com/maps/search/?api=1&query=%E4%B8%96%E7%95%8C%E5%B9%B8%E7%A6%8F%E5%92%96%E5%95%A1%E7%B8%BD%E5%BA%97%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%B3%A8%E7%9C%89%E9%84%89%E5%BF%AB%E6%A8%82%E8%B7%AF7%E8%99%9F"}, {"n": "雪之湖咖啡", "s": 3, "tag": "咖啡景觀", "new": false, "d": "位在細茅埔吊橋旁的水庫湖景咖啡,假日有街頭藝人駐唱。", "a": "新竹縣峨眉鄉太平街8巷1-1號", "t": "", "o": "10:00–18:00", "z": "峨眉", "k": "cup", "m": "https://www.google.com/maps/search/?api=1&query=%E9%9B%AA%E4%B9%8B%E6%B9%96%E5%92%96%E5%95%A1%20%E6%96%B0%E7%AB%B9%E7%B8%A3%E5%B3%A8%E7%9C%89%E9%84%89%E5%A4%AA%E5%B9%B3%E8%A1%978%E5%B7%B71-1%E8%99%9F"}], "icons": {"plate": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"20.0\" cy=\"20.0\" rx=\"14.0\" ry=\"14.0\" fill=\"#FFFFFF\" stroke=\"#8C8C8C\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"20.0\" rx=\"9.0\" ry=\"9.0\" fill=\"none\" stroke=\"#C9C9C9\" stroke-width=\"0.8\"/><path d=\"M2 10L2 30\" fill=\"none\" stroke=\"#6B6B6B\" stroke-width=\"1.2\"/><path d=\"M38 8L38 32\" fill=\"none\" stroke=\"#6B6B6B\" stroke-width=\"1.2\"/><ellipse cx=\"20.0\" cy=\"20.0\" rx=\"5.0\" ry=\"5.0\" fill=\"#E8B15A\" stroke=\"none\" stroke-width=\"1\"/><\/g><\/svg>", "dumpling": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 13C4 34 36 34 36 13Z\" fill=\"#F5E4C3\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M9.0 25L10.4 29\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M13.4 28L14.8 32\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M17.8 28L19.2 32\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M22.200000000000003 28L23.6 32\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M26.6 28L28.0 32\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M31.0 25L32.4 29\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><path d=\"M4 13L36 13\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1\"/><\/g><\/svg>", "rice": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 20C5 4 35 4 35 20Z\" fill=\"#3E6E8E\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"20.0\" rx=\"16.0\" ry=\"2.5\" fill=\"#F2E6CE\" stroke=\"#5B3B22\" stroke-width=\"0.8\"/><path d=\"M14 5.5L26 5.5\" fill=\"none\" stroke=\"#5B3B22\" stroke-width=\"1.6\"/><path d=\"M7 20.5C9 36 31 36 33 20.5Z\" fill=\"#FFFFFF\" stroke=\"#CFC6B4\" stroke-width=\"0.8\"/><ellipse cx=\"15.0\" cy=\"28.0\" rx=\"0.9000000000000004\" ry=\"0.5\" fill=\"#C9BFA8\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"31.0\" rx=\"0.8999999999999986\" ry=\"0.5\" fill=\"#C9BFA8\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"25.0\" cy=\"28.0\" rx=\"0.8999999999999986\" ry=\"0.5\" fill=\"#C9BFA8\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"18.0\" cy=\"25.0\" rx=\"0.8999999999999986\" ry=\"0.5\" fill=\"#C9BFA8\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"23.0\" cy=\"25.0\" rx=\"0.8999999999999986\" ry=\"0.5\" fill=\"#C9BFA8\" stroke=\"none\" stroke-width=\"1\"/><\/g><\/svg>", "leaf": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 6C5 28 20 38 35 35C36 20 26 6 7 6Z\" fill=\"#2F6F62\" stroke=\"#1D4A41\" stroke-width=\"1\"/><path d=\"M7 6C14 16 22 24 31 31\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"1.4\"/><path d=\"M16 16L14 24\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"1\"/><path d=\"M22 22L21 29\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"1\"/><\/g><\/svg>", "cup": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"18.0\" cy=\"7.0\" rx=\"15.0\" ry=\"3.0\" fill=\"#EADFC8\" stroke=\"#7A4A26\" stroke-width=\"0.8\"/><path d=\"M7 9L7 22C7 28 27 28 27 22L27 9Z\" fill=\"#F4EBD9\" stroke=\"#7A4A26\" stroke-width=\"1\"/><ellipse cx=\"29.5\" cy=\"16.5\" rx=\"5.5\" ry=\"5.5\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1.6\"/><ellipse cx=\"17.0\" cy=\"22.75\" rx=\"8.5\" ry=\"1.75\" fill=\"#8A5A2E\" stroke=\"none\" stroke-width=\"1\"/><path d=\"M12 28C8 31 16 33 12 37\" fill=\"none\" stroke=\"#9AA7A5\" stroke-width=\"1.2\"/><path d=\"M17 28C13 31 21 33 17 37\" fill=\"none\" stroke=\"#9AA7A5\" stroke-width=\"1.2\"/><path d=\"M22 28C18 31 26 33 22 37\" fill=\"none\" stroke=\"#9AA7A5\" stroke-width=\"1.2\"/><\/g><\/svg>", "pizza": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 3L3 31C13 39 27 39 37 31Z\" fill=\"#F2C14E\" stroke=\"#9A6A1B\" stroke-width=\"1\"/><path d=\"M3 31C13 39 27 39 37 31\" fill=\"none\" stroke=\"#B3772A\" stroke-width=\"3.5\"/><ellipse cx=\"16.0\" cy=\"24.0\" rx=\"2.6000000000000005\" ry=\"2.6000000000000014\" fill=\"#C0392B\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"24.0\" cy=\"25.0\" rx=\"2.6000000000000014\" ry=\"2.6000000000000014\" fill=\"#C0392B\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"15.0\" rx=\"2.6000000000000014\" ry=\"2.6000000000000005\" fill=\"#C0392B\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"30.0\" rx=\"2.6000000000000014\" ry=\"2.6000000000000014\" fill=\"#C0392B\" stroke=\"none\" stroke-width=\"1\"/><\/g><\/svg>", "meat": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"17.0\" cy=\"24.0\" rx=\"11.0\" ry=\"10.0\" fill=\"#B2652F\" stroke=\"#6E3A17\" stroke-width=\"1\"/><ellipse cx=\"14.5\" cy=\"26.0\" rx=\"3.5\" ry=\"4.0\" fill=\"#C98048\" stroke=\"none\" stroke-width=\"1\"/><path d=\"M23 17L33 8\" fill=\"none\" stroke=\"#F3EBDD\" stroke-width=\"4\"/><ellipse cx=\"33.5\" cy=\"6.5\" rx=\"2.5\" ry=\"2.5\" fill=\"#F3EBDD\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"36.5\" cy=\"10.5\" rx=\"2.5\" ry=\"2.5\" fill=\"#F3EBDD\" stroke=\"none\" stroke-width=\"1\"/><\/g><\/svg>", "noodle": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 20C5 4 35 4 35 20Z\" fill=\"#B8392B\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"20.0\" rx=\"16.0\" ry=\"2.5\" fill=\"#F2E6CE\" stroke=\"#5B3B22\" stroke-width=\"0.8\"/><path d=\"M14 5.5L26 5.5\" fill=\"none\" stroke=\"#5B3B22\" stroke-width=\"1.6\"/><ellipse cx=\"20.0\" cy=\"20.0\" rx=\"14.0\" ry=\"1.5\" fill=\"#E8B15A\" stroke=\"none\" stroke-width=\"1\"/><path d=\"M9 20C7 28 13 25 11 32\" fill=\"none\" stroke=\"#F1CF7A\" stroke-width=\"1.7\"/><path d=\"M14 20C12 28 18 25 16 32\" fill=\"none\" stroke=\"#F1CF7A\" stroke-width=\"1.7\"/><path d=\"M19 20C17 28 23 25 21 32\" fill=\"none\" stroke=\"#F1CF7A\" stroke-width=\"1.7\"/><path d=\"M24 20C22 28 28 25 26 32\" fill=\"none\" stroke=\"#F1CF7A\" stroke-width=\"1.7\"/><path d=\"M29 20C27 28 33 25 31 32\" fill=\"none\" stroke=\"#F1CF7A\" stroke-width=\"1.7\"/><path d=\"M26 39L18 23\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1.5\"/><path d=\"M31 38L22 23\" fill=\"none\" stroke=\"#7A4A26\" stroke-width=\"1.5\"/><\/g><\/svg>", "sweet": "<svg viewBox=\"0 0 40 40\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0 40) scale(1 -1)\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21C6 6 34 6 34 21Z\" fill=\"#D5E9F1\" stroke=\"#5A8AA0\" stroke-width=\"1\"/><ellipse cx=\"14.0\" cy=\"25.0\" rx=\"6.5\" ry=\"6.5\" fill=\"#F6C6D0\" stroke=\"#B9A98F\" stroke-width=\"0.5\"/><ellipse cx=\"25.0\" cy=\"25.0\" rx=\"6.5\" ry=\"6.5\" fill=\"#CDE8C9\" stroke=\"#B9A98F\" stroke-width=\"0.5\"/><ellipse cx=\"19.5\" cy=\"31.0\" rx=\"6.0\" ry=\"6.0\" fill=\"#F7E7A8\" stroke=\"#B9A98F\" stroke-width=\"0.5\"/><ellipse cx=\"20.0\" cy=\"38.5\" rx=\"2.0\" ry=\"2.0\" fill=\"#C0302A\" stroke=\"none\" stroke-width=\"1\"/><ellipse cx=\"20.0\" cy=\"21.25\" rx=\"16.0\" ry=\"1.75\" fill=\"#FFFFFF\" stroke=\"#5A8AA0\" stroke-width=\"0.8\"/><path d=\"M14 5.5L26 5.5\" fill=\"none\" stroke=\"#5A8AA0\" stroke-width=\"1.6\"/><\/g><\/svg>"}, "pos": {"湖口": [62, 14, "j"], "新埔": [88, 22, "j"], "關西": [122, 24, "j"], "竹北": [52, 36, "j"], "芎林": [86, 42, "j"], "竹東": [96, 56, "j"], "橫山": [124, 48, "j"], "北埔": [118, 68, "j"], "峨眉": [92, 80, "j"], "北區": [36, 52, "a"], "東區": [56, 62, "a"], "香山區": [36, 78, "a"]}, "label": {"北區": "市・北區", "東區": "市・東區", "香山區": "市・香山區"}, "secs": ["必比登推介", "城隍廟老味", "市區私藏", "客家與山城"]};
+  var items = D.items, SEC = D.secs;
+  var COL = ['var(--w0)','var(--w1)','var(--w2)','var(--w3)'], COLB = ['var(--w0b)','var(--w1b)','var(--w2b)','var(--w3b)'];
+  var filter = 'all', pool = [], rot = 0, spinning = false, hist = [];
+  var rotEl = document.getElementById('rot'), spinBtn = document.getElementById('spin');
+  var reduce = false; try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  var NS = 'http://www.w3.org/2000/svg';
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ---------- chips ---------- */
+  var chipsEl = document.getElementById('chips');
+  var defs = [['all','全部',50],['0',SEC[0],0],['1',SEC[1],0],['2',SEC[2],0],['3',SEC[3],0]];
+  items.forEach(function(it){ defs[it.s+1][2]++; });
+  defs.forEach(function(d){
+    var b = document.createElement('button'); b.type='button'; b.className='chip'; b.dataset.f=d[0];
+    b.setAttribute('aria-pressed', d[0]==='all'); b.innerHTML = esc(d[1])+' <span class="n">'+d[2]+'</span>';
+    b.addEventListener('click', function(){ if(spinning) return; filter=d[0]; [].forEach.call(chipsEl.children, function(x){ x.setAttribute('aria-pressed', x===b); }); build(); });
+    chipsEl.appendChild(b);
+  });
+
+  /* ---------- wheel ---------- */
+  function pt(r, deg){ var a = deg*Math.PI/180; return [r*Math.sin(a), -r*Math.cos(a)]; }
+  function build(){
+    pool = items.filter(function(it){ return filter==='all' || String(it.s)===filter; });
+    var n = pool.length, a = 360/n, R = 258, html = '';
+    for (var i=0;i<n;i++){
+      var p0 = pt(R, i*a), p1 = pt(R, (i+1)*a), s = pool[i].s;
+      var fill = (i%2===0) ? COL[s] : COLB[s];
+      html += '<path class="sl" data-i="'+i+'" d="M0 0L'+p0[0].toFixed(2)+' '+p0[1].toFixed(2)+'A'+R+' '+R+' 0 0 1 '+p1[0].toFixed(2)+' '+p1[1].toFixed(2)+'Z" fill="'+fill+'" stroke="var(--surface)" stroke-width="1.2"/>';
+      var mid = (i+.5)*a;
+      var fs = n<=10 ? 17 : (n<=14 ? 15 : (n<=20 ? 13 : (n<=30 ? 11.5 : 10))), nm = pool[i].n;
+      if (nm.length > 12) nm = nm.slice(0,11)+'…';
+      html += '<text class="sl-t" font-size="'+fs+'" transform="rotate('+(mid-90).toFixed(2)+')" x="'+(R-14)+'" y="'+(fs*.35).toFixed(1)+'" text-anchor="end">'+esc(nm)+'</text>';
+    }
+    rotEl.innerHTML = html;
+    rotEl.style.transition = 'none'; rot = 0; rotEl.style.transform = 'rotate(0deg)';
+    document.getElementById('hint').textContent = n+' 家候選'+(n>30?'(家數多,字較小,可先選單一章節)':'');
+    drawMap(null);
+  }
+
+  /* ---------- map ---------- */
+  var cnt = {};
+  function drawMap(sel){
+    var c = {}; pool.forEach(function(it){ c[it.z] = (c[it.z]||0)+1; });
+    var s = '<svg viewBox="0 0 174 92" role="img" aria-label="新竹示意地圖" class="'+(sel?'dim':'')+'">'
+      + '<rect width="174" height="92" fill="var(--sea)"/>'
+      + '<path d="M30 92C24 72 36 52 26 32C24 17 34 7 40 0L174 0L174 92Z" fill="var(--land)"/>';
+    [14,36,58,78].forEach(function(yy){ var y=92-yy; s += '<path d="M4 '+y+'C8 '+(y-3)+' 12 '+(y+3)+' 16 '+y+'C19 '+(y-3)+' 22 '+(y+3)+' 25 '+y+'" fill="none" stroke="var(--wave)" stroke-width=".8"/>'; });
+    s += '<text x="5" y="89" font-size="3.2" fill="var(--muted)">台灣海峽</text>';
+    Object.keys(D.pos).forEach(function(k){
+      var p = D.pos[k], n = c[k]||0, r = 3.2 + n*.55, on = sel && sel.z===k;
+      var col = p[2]==='a' ? 'var(--accent)' : 'var(--jade)', lab = D.label[k] || k;
+      s += '<g class="dz'+(on?' on':'')+'" opacity="'+(n||on?1:.3)+'">';
+      if (on) s += '<circle class="ring" cx="'+p[0]+'" cy="'+p[1]+'" r="'+(r+1)+'"/>';
+      s += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+r.toFixed(2)+'" fill="'+col+'" stroke="'+(on?'var(--ink)':'var(--surface)')+'" stroke-width="'+(on?1.2:.8)+'"/>'
+         + (n?'<text x="'+p[0]+'" y="'+(p[1]+1.3)+'" font-size="'+(n>1?3.8:3.3)+'" text-anchor="middle" fill="#fff" font-weight="700">'+n+'</text>':'')
+         + '<text x="'+p[0]+'" y="'+(p[1]+r+3.6).toFixed(1)+'" font-size="3.2" text-anchor="middle" fill="var(--ink)"'+(on?' font-weight="700"':'')+'>'+lab+'</text></g>';
+    });
+    s += '<rect x="133" y="62" width="38" height="26" rx="2" fill="var(--surface)" opacity=".92"/>'
+      + '<circle cx="138" cy="68" r="2" fill="var(--accent)"/><text x="142" y="69.2" font-size="3.2" fill="var(--ink)">新竹市</text>'
+      + '<circle cx="138" cy="74" r="2" fill="var(--jade)"/><text x="142" y="75.2" font-size="3.2" fill="var(--ink)">新竹縣</text>'
+      + '<text x="136" y="82" font-size="2.7" fill="var(--muted)">圓內為候選店家數</text><text x="136" y="86" font-size="2.7" fill="var(--muted)">示意圖,非實際比例</text></svg>';
+    document.getElementById('mapbox').innerHTML = s;
+  }
+
+  /* ---------- result ---------- */
+  function showResult(it){
+    var h = '<div class="res-top"><span class="ico">'+D.icons[it.k]+'</span><div><h2>'+esc(it.n)+'</h2><div class="tags"><span class="tag'+(it.tag.indexOf('必比登')>-1?' bib':'')+'">'+esc(it.tag)+'</span>'+(it.new?'<span class="tag new">2026 新入選</span>':'')+'</div></div></div>'
+      + '<p class="d">'+esc(it.d)+'</p><dl class="info"><div><dt>地區</dt><dd>'+esc(D.label[it.z]||it.z)+'</dd></div><div><dt>地址</dt><dd>'+esc(it.a)+'</dd></div>'
+      + (it.t?'<div><dt>電話</dt><dd>'+esc(it.t)+'</dd></div>':'') + (it.o?'<div><dt>時間</dt><dd>'+esc(it.o)+'</dd></div>':'') + '</dl>'
+      + '<div class="acts"><a class="btn pri" href="'+it.m+'" target="_blank" rel="noopener">在地圖開啟</a><button class="btn" id="cp" type="button">複製地址</button><button class="btn" id="again" type="button">再轉一次</button></div>';
+    var el = document.getElementById('res'); el.innerHTML = h;
+    document.getElementById('again').addEventListener('click', spin);
+    document.getElementById('cp').addEventListener('click', function(){
+      var b = this, ok = function(){ b.textContent='已複製'; setTimeout(function(){ b.textContent='複製地址'; },1500); };
+      var fb = function(){ var r=document.createRange(); r.selectNodeContents(el.querySelectorAll('.info dd')[1]); var s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent='已選取地址'; setTimeout(function(){ b.textContent='複製地址'; },1500); };
+      try { navigator.clipboard.writeText(it.a).then(ok, fb); } catch(e){ fb(); }
+    });
+    hist.unshift(it.n); hist = hist.slice(0,8);
+    document.getElementById('hist').innerHTML = hist.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('');
+    document.getElementById('histw').hidden = false;
+  }
+
+  /* ---------- spin ---------- */
+  function spin(){
+    if (spinning || !pool.length) return;
+    spinning = true; spinBtn.disabled = true;
+    [].forEach.call(rotEl.querySelectorAll('.sl.win'), function(p){ p.classList.remove('win'); });
+    var n = pool.length, a = 360/n, w = Math.floor(Math.random()*n);
+    var jitter = (Math.random()-.5)*a*.7;
+    var target = (360 - ((w+.5)*a + jitter)) % 360; if (target < 0) target += 360;
+    var cur = ((rot % 360)+360) % 360, delta = target - cur; if (delta < 0) delta += 360;
+    var turns = reduce ? 1 : 5 + Math.floor(Math.random()*3);
+    rot = rot + turns*360 + delta;
+    var dur = reduce ? 500 : 5200;
+    rotEl.style.transition = 'transform '+dur+'ms cubic-bezier(.12,.6,.1,1)';
+    rotEl.style.transform = 'rotate('+rot+'deg)';
+    document.getElementById('hint').textContent = '轉動中…';
+    var done = false;
+    function end(){
+      if (done) return; done = true;
+      spinning = false; spinBtn.disabled = false;
+      var it = pool[w]; var path = rotEl.querySelector('.sl[data-i="'+w+'"]'); if (path) path.classList.add('win');
+      document.getElementById('hint').textContent = '轉到:'+it.n+'。想換一家就再轉一次。';
+      drawMap(it); showResult(it);
+    }
+    rotEl.addEventListener('transitionend', end, {once:true});
+    setTimeout(end, dur+300);
+  }
+  spinBtn.addEventListener('click', spin);
+  build();
+})();
+</script>
+
+</body></html>
