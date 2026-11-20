@@ -23,13 +23,14 @@ function migrateGijangToLastDay(){
   state.days[3].push({...existingStop,id:existingStop?.id??Date.now(),time:'11:00',name:gijangPlace.name,note:meal.note,cat:'美食',place:'gijang-market',logKey:'meals-3-'+nextLastMeals.indexOf(meal)});state.days[3].sort((a,b)=>a.time.localeCompare(b.time));
   state.logistics.transport[2]=state.logistics.transport[2].map(t=>t.name==='南浦 → 海東龍宮寺 → 機張市場 → 南浦'?structuredClone(logisticsDefaults.transport[2][0]):t);
   const lastTransfers=state.logistics.transport[3].filter(t=>!t.gijangTransfer&&t.name!=='南浦 → 金海機場');
-  lastTransfers.push({time:'08:30',name:'退房寄放行李 → 機張市場',note:'先與飯店確認可寄放行李，再從南浦前往機張；以 NAVER 或 Google Maps 查當日轉乘，行程自訂預留約 90–120 分鐘。11:00 海鮮午餐，12:30 前離開市場。',cost:5000,gijangTransfer:true},{time:'12:30',name:'機張市場 → 飯店取行李 → 金海機場',note:'從機張站搭東海線往釜田方向，再依導航轉乘回飯店取行李；先預留約 90–120 分鐘，加 30 分鐘取行李。目標 15:00 前離開飯店去機場，另預留 75–100 分鐘交通及國際航班報到時間。此為規劃緩衝，非班次保證；傍晚前起飛請提早或改餐。',cost:10000,gijangTransfer:true});
+  lastTransfers.push({time:'08:30',name:'退房寄放行李 → 機張市場',note:'先與飯店確認可寄放行李，再從南浦前往機張；以 NAVER 或 Google Maps 查當日轉乘，行程自訂預留約 90–120 分鐘。11:00 海鮮午餐，12:30 前離開市場。',cost:5000,gijangTransfer:true},{time:'12:30',name:'機張市場 → 飯店取行李 → 金海機場',note:'從機張站搭東海線往釜田方向，再依導航轉乘回飯店取行李；先預留約 90–120 分鐘，加 30 分鐘取行李。目標 15:00 前離開飯店去機場，另預留 75–100 分鐘交通及國際航班報到時間。此為規劃緩衝，非班次保證；20:00 前起飛請提早或改餐。',cost:10000,gijangTransfer:true});
   lastTransfers.sort((a,b)=>a.time.localeCompare(b.time));state.logistics.transport[3]=lastTransfers;
   state.gijangMarketAdded=true;state.gijangMarketDayVersion=2;
   try{localStorage.setItem('busan-days-v1',JSON.stringify(state))}catch{}
   return true;
 }
 migrateGijangToLastDay();
+$('.planning-note').textContent='規劃假設：4 天 3 夜・2 人共住一間・南浦站住宿。首日交通仍為示範；最後一天機張市場方案以 20:00 後回程為前提，請依實際航班及航空公司報到時間調整。所有時間與花費為規劃估算。';
 const marketPreviousRouteItems=routeItems;routeItems=function(){const ids=marketPreviousRouteItems();if(day===3&&ids.includes('gijang-market')){const airport=ids.lastIndexOf('airport');if(airport>0&&ids[airport-1]!=='hotel')ids.splice(airport,0,'hotel');}return ids;};
 function googlePlace(q){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)}
 function googleLeg(a,b){return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(coordinates[a].join(','))+'&destination='+encodeURIComponent(coordinates[b].join(','))+'&travelmode=transit'}
